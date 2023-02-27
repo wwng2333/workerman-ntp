@@ -678,7 +678,7 @@ class NTPLite
     public static function convertDateTimeToSntp($oTimestamp)
     {
         // Changes the timestamp base, and converts into milliseconds
-        return ($oTimestamp->getTimestamp() + self::SNTP_TO_UNIX_TS_INTERVAL) * 1000;
+        return ($oTimestamp->format('Uv')) + (self::SNTP_TO_UNIX_TS_INTERVAL) * 1000;
     }
     
     /**
