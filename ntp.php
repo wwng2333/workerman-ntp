@@ -20,9 +20,9 @@ $ntp_worker->onWorkerStart = function () {
         $time_interval,
         function () {
             global $global;
-            echo "query:$global->query_now, is_limit:";
-            echo $global->is_limited ? 1 : 0;
-            echo "\nTimer act, clear list.\n";
+            #echo "query:$global->query_now, is_limit:";
+            #echo $global->is_limited ? 1 : 0;
+            #echo "\nTimer act, clear list.\n";
             $global->query_now = 0;
             $global->is_limited = false;
         }
@@ -30,6 +30,7 @@ $ntp_worker->onWorkerStart = function () {
     echo "Timer added!\n";
 };
 $ntp_worker->onMessage = function (UdpConnection $connection, $data) {
+    $recv_time = new DateTime(NULL);
     global $global;
     $global->query_now++;
     if ($global->query_now > 2)
@@ -58,10 +59,10 @@ $ntp_worker->onMessage = function (UdpConnection $connection, $data) {
             $now = new DateTime(NULL);
             $NTP->referenceTimestamp = NTPLite::convertDateTimeToSntp($now);
             $NTP->originateTimestamp = $NTP->transmitTimestamp;
-            $NTP->receiveTimestamp = NTPLite::convertDateTimeToSntp($now);
-            $NTP->transmitTimestamp = NTPLite::convertDateTimeToSntp($now);
+            $NTP->receiveTimestamp = NTPLite::convertDateTimeToSntp($recv_time);
+            $transmit_time = new DateTime(NULL);
+            $NTP->transmitTimestamp = NTPLite::convertDateTimeToSntp($transmit_time);
             $message = $NTP->writeMessage();
-            unset($NTP);
             $connection->close($message);
         }
     }
