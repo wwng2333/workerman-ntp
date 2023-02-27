@@ -829,8 +829,14 @@ class NTPLite
      */
     public function dump()
     {
-        for ($i = 0; $i < $this->_messageSize; $i++)
+        for ($i = 0; $i < $this->_messageSize; $i++) {
+            if ($i % 8 === 0)
+                echo ' ';
+            if ($i % 16 === 0)
+                echo "\n";
             printf('%02x', $this->_messageBytes[$i]);
+        }
+        echo "\n";
     }
 }
 ?>
