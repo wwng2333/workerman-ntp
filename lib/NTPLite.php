@@ -53,21 +53,21 @@
 class NTPLite
 {
     /* CONSTANTS */
-    
+
     /**
      * SNTP message without authentication, 48 bytes.
      * 
      * @since 1.0
      */
     const SNTP_MSG_NO_AUTH = 48;
-    
+
     /**
      * SNTP message with authentication, 48 bytes + 20 bytes.
      * 
      * @since 1.3
      */
     const SNTP_MSG_AUTH = 68;
-    
+
     /**
      * Number of seconds between the two timestamp references, 01/01/1900 to
      * 01/01/1970.
@@ -75,10 +75,10 @@ class NTPLite
      * @since 1.0
      */
     const SNTP_TO_UNIX_TS_INTERVAL = 2208988800;
-    
-    
+
+
     /* PUBLIC MEMBERS, from RFC 4330 */
-    
+
     /**
      * Leap indicator (LI).
      * 
@@ -94,7 +94,7 @@ class NTPLite
      * @since 1.0
      */
     public $leapIndicator = 0;
-    
+
     /**
      * Version number (VN).
      * 
@@ -106,7 +106,7 @@ class NTPLite
      * @since 1.0
      */
     public $versionNumber = 0;
-    
+
     /**
      * Mode.
      * 
@@ -128,7 +128,7 @@ class NTPLite
      * @since 1.0
      */
     public $mode = 0;
-    
+
     /**
      * Stratum.
      * 
@@ -144,7 +144,7 @@ class NTPLite
      * @since 1.0
      */
     public $stratum = 0;
-    
+
     /**
      * Poll interval.
      * 
@@ -157,7 +157,7 @@ class NTPLite
      * @since 1.0
      */
     public $pollInterval = 0;
-    
+
     /**
      * Precision.
      * 
@@ -170,7 +170,7 @@ class NTPLite
      * @since 1.0
      */
     public $precision = 0;
-    
+
     /**
      * Root delay.
      * 
@@ -185,7 +185,7 @@ class NTPLite
      * @since 1.0
      */
     public $rootDelay = 0;
-    
+
     /**
      * Root dispersion.
      * 
@@ -198,7 +198,7 @@ class NTPLite
      * @since 1.0
      */
     public $rootDispersion = 0;
-    
+
     /**
      * Reference identifier.
      * 
@@ -227,7 +227,7 @@ class NTPLite
      * @since 1.0
      */
     public $referenceIdentifier = 0;
-    
+
     /**
      * Reference timestamp.
      * 
@@ -238,7 +238,7 @@ class NTPLite
      * @since 1.0
      */
     public $referenceTimestamp = 0;
-    
+
     /**
      * Originate timestamp.
      * 
@@ -249,7 +249,7 @@ class NTPLite
      * @since 1.0
      */
     public $originateTimestamp = 0;
-    
+
     /**
      * Receive timestamp.
      * 
@@ -260,7 +260,7 @@ class NTPLite
      * @since 1.0
      */
     public $receiveTimestamp = 0;
-    
+
     /**
      * Transmit timestamp.
      * 
@@ -271,7 +271,7 @@ class NTPLite
      * @since 1.0
      */
     public $transmitTimestamp = 0;
-    
+
     /**
      * Key identifier (optional).
      * 
@@ -283,7 +283,7 @@ class NTPLite
      * @since 1.3
      */
     public $keyIdentifier = 0;
-    
+
     /**
      * Message digest (optional).
      * 
@@ -295,18 +295,18 @@ class NTPLite
      * @since 1.3
      */
     public $messageDigest = 0;
-    
-    
+
+
     /* PRIVATE MEMBERS, the message */
-    
+
     /**
      * The SNTP message bytes.
      * 
      * @var   array
      * @since 1.0
      */
-    private $_messageBytes = array();
-    
+    public $_messageBytes = array();
+    public $transmit_time = array();
     /**
      * The SNTP message size, depends whether authentication mode is used or not.
      * 
@@ -314,7 +314,7 @@ class NTPLite
      * @since 1.3
      */
     private $_messageSize = 0;
-    
+
     /**
      * The authentication mode, true if authenticated.
      * 
@@ -322,10 +322,11 @@ class NTPLite
      * @since 1.3
      */
     private $_authenticated = false;
-    
-    
+
+    public $_transmitTimestamp = '';
+
     /* CONSTRUCTOR/DESTRUCTOR, et al. */
-    
+
     /**
      * The SNTP message constructor.
      * 
@@ -335,12 +336,12 @@ class NTPLite
      * 
      * @since 1.0
      */
-    public function __construct( $authenticated = false )
+    public function __construct($authenticated = false)
     {
         $this->_authenticated = $authenticated;
         $this->_initMessage();
     }
-    
+
     /**
      * Class destructor, destroy the message.
      * 
@@ -350,7 +351,7 @@ class NTPLite
     {
         unset($this->_message);
     }
-    
+
     /**
      * Set accessor, to prevent user to set invalid members.
      * 
@@ -363,7 +364,7 @@ class NTPLite
     {
         trigger_error("Set invalid member: $name", E_USER_NOTICE);
     }
-    
+
     /**
      * Get accessor, to present user to get invalid members.
      * 
@@ -378,7 +379,7 @@ class NTPLite
         trigger_error("Get invalid member: $name", E_USER_NOTICE);
         return null;
     }
-    
+
     /**
      * Initiates the message.
      * 
@@ -390,16 +391,16 @@ class NTPLite
     {
         // Size
         $this->_messageSize = $this->_authenticated
-                            ? self::SNTP_MSG_AUTH
-                            : self::SNTP_MSG_NO_AUTH;
-        
+            ? self::SNTP_MSG_AUTH
+            : self::SNTP_MSG_NO_AUTH;
+
         // Bytes, zero-filled
         $this->_messageBytes = array_fill(0, $this->_messageSize, 0x00);
     }
-    
-    
+
+
     /* PUBLIC METHODS, to read and write messages */
-    
+
     /**
      * Sets the internal members from an SNTP message.
      * 
@@ -413,60 +414,66 @@ class NTPLite
     {
         // Check the message length
         $length = strlen($message);
-        if (($length != self::SNTP_MSG_NO_AUTH)
-         && ($length != self::SNTP_MSG_AUTH)) {
+        if (
+            ($length != self::SNTP_MSG_NO_AUTH)
+            && ($length != self::SNTP_MSG_AUTH)
+        ) {
             return false;
         }
-        
+
         // Empties internal message
         $this->_authenticated = ($length == self::SNTP_MSG_AUTH);
         $this->_initMessage();
-        
+
         // Transforms the string into bytes
         for ($i = 0; $i < $this->_messageSize; $i++) {
             $this->_messageBytes[$i] = ord($message[$i]);
         }
-        
+
         // Sets member values from the message
-        $this->leapIndicator = ( $this->_messageBytes[0] & 0xc0 ) >> 6;
-        $this->versionNumber = ( $this->_messageBytes[0] & 0x38 ) >> 3;
-        $this->mode =            $this->_messageBytes[0] & 0x07;
-        $this->stratum =         $this->_messageBytes[1];
-        $this->pollInterval =    $this->_messageBytes[2];
-        $this->precision =       $this->_messageBytes[3] | 0xffffff00;
-        
+        $this->leapIndicator = ($this->_messageBytes[0] & 0xc0) >> 6;
+        $this->versionNumber = ($this->_messageBytes[0] & 0x38) >> 3;
+        $this->mode = $this->_messageBytes[0] & 0x07;
+        $this->stratum = $this->_messageBytes[1];
+        $this->pollInterval = $this->_messageBytes[2];
+        $this->precision = $this->_messageBytes[3] | 0xffffff00;
+
         $t = 0x100 *
-           ( 0x100 *
-           ( 0x100 * $this->_messageBytes[4]
-                   + $this->_messageBytes[5] )
-                   + $this->_messageBytes[6] )
-                   + $this->_messageBytes[7];
+            (0x100 *
+                (0x100 * $this->_messageBytes[4]
+                    + $this->_messageBytes[5])
+                + $this->_messageBytes[6])
+            + $this->_messageBytes[7];
         $this->rootDelay = $t / 0x10000; // in seconds
-        
+
         $u = 0x100 *
-           ( 0x100 *
-           ( 0x100 * $this->_messageBytes[8]
-                   + $this->_messageBytes[9] )
-                   + $this->_messageBytes[10] )
-                   + $this->_messageBytes[11];
+            (0x100 *
+                (0x100 * $this->_messageBytes[8]
+                    + $this->_messageBytes[9])
+                + $this->_messageBytes[10])
+            + $this->_messageBytes[11];
         $this->rootDispersion = $u / 0x10000; // in seconds
-        
+
         $this->referenceIdentifier = $this->_readInArray(12, 4);
-        
+
         $this->referenceTimestamp = $this->_readTimestamp(16);
         $this->originateTimestamp = $this->_readTimestamp(24);
-        $this->receiveTimestamp   = $this->_readTimestamp(32);
-        $this->transmitTimestamp  = $this->_readTimestamp(40);
-        
+        $this->receiveTimestamp = $this->_readTimestamp(32);
+        $this->transmitTimestamp = $this->_readTimestamp(40);
+        $this->_transmitTimestamp = $this->_readTimestamp(40);
         // In authenticated mode, reads the two optional fields
         if ($this->_authenticated) {
             $this->keyIdentifier = $this->_readInArray(48, 4);
             $this->messageDigest = $this->_readInArray(52, 16);
         }
-        
+
+        for ($i = 40; $i < 48; $i++) {
+            $this->transmit_time[] = $this->_messageBytes[$i];
+        }
+
         return true;
     }
-    
+
     /**
      * Builds the SNTP message from the member values.
      * 
@@ -478,50 +485,55 @@ class NTPLite
     {
         // Empties internal message
         $this->_initMessage();
-        
+
         // Fill in the message from the members
         $this->_messageBytes[0] = ($this->leapIndicator << 6)
-                                | ($this->versionNumber << 3)
-                                |  $this->mode;
+            | ($this->versionNumber << 3)
+            | $this->mode;
         $this->_messageBytes[1] = $this->stratum;
         $this->_messageBytes[2] = $this->pollInterval;
         $this->_messageBytes[3] = $this->precision & 0x000000ff;
-        
-        $this->_writeInArray(4, $this->_intToArray($this->rootDelay      << 16, 4));
+
+        $this->_writeInArray(4, $this->_intToArray($this->rootDelay << 16, 4));
         $this->_writeInArray(8, $this->_intToArray($this->rootDispersion << 16, 8));
-        
+
         // The Reference Identifier can be a 4-character string or a long
-        if (is_string($this->referenceIdentifier)
-           && (strlen($this->referenceIdentifier) <= 4)) {
+        if (
+            is_string($this->referenceIdentifier)
+            && (strlen($this->referenceIdentifier) <= 4)
+        ) {
             $binaryRefId = $this->_strToArray($this->referenceIdentifier);
         } else {
             $binaryRefId = $this->_intToArray($this->referenceIdentifier, 4);
         }
         $this->_writeInArray(12, $binaryRefId);
-        
+
         $this->_writeTimestamp($this->referenceTimestamp, 16);
-        $this->_writeTimestamp($this->originateTimestamp, 24);
-        $this->_writeTimestamp($this->receiveTimestamp,   32);
-        $this->_writeTimestamp($this->transmitTimestamp,  40);
-        
+        //$this->_writeTimestamp($this->originateTimestamp, 24);
+        //$this->_messageBytes[40..47]
+        //$this->_writeInArray(24, $this->_readTimestamp(40));
+        $this->_writehexInArray(24, $this->transmit_time);
+        $this->_writeTimestamp($this->receiveTimestamp, 32);
+        $this->_writeTimestamp($this->transmitTimestamp, 40);
+
         // In authenticated mode, writes the two optional fields
         if ($this->_authenticated) {
             $this->_writeInArray(48, $this->_intToArray($this->keyIdentifier, 4));
             $this->_writeInArray(52, $this->_intToArray($this->messageDigest, 16));
         }
-        
+
         // Transforms the bytes into string
         $message = '';
         for ($i = 0; $i < $this->_messageSize; $i++) {
             $message .= pack('c', $this->_messageBytes[$i]);
         }
-        
+
         return $message;
     }
-    
-    
+
+
     /* PRIVATE METHODS, to manipulate integers, strings and arrays */
-    
+
     /**
      * Transforms an integer into an array of bytes. Puts one byte per array value.
      * 
@@ -537,13 +549,13 @@ class NTPLite
         $hexSize = 2 * $size;
         $hexValue = sprintf('%0' . $hexSize . 'x', $value);
         $array = array_fill(0, $size, 0x00);
-        
+
         for ($i = 0; $i < $size; $i++)
             $array[$i] = hexdec(substr($hexValue, $i * 2, 2));
-        
+
         return $array;
     }
-    
+
     /**
      * Transforms a string into an array of bytes. Puts one byte per array value.
      * The array size is the string's.
@@ -558,13 +570,13 @@ class NTPLite
     {
         $stringSize = strlen($string);
         $array = array_fill(0, $stringSize, 0x00);
-        
+
         for ($i = 0; $i < $stringSize; $i++)
             $array[$i] = ord($string[$i]);
-        
+
         return $array;
     }
-    
+
     /**
      * Reads a slice of the internal array and converts it into an integer.
      * 
@@ -579,13 +591,13 @@ class NTPLite
     {
         $slice = array_slice($this->_messageBytes, $start, $size);
         $value = 0;
-        
+
         for ($i = 0; $i < $size; $i++)
             $value |= $slice[$i] << (8 * ($size - 1 - $i));
-        
+
         return $value;
     }
-    
+
     /**
      * Writes an array inside the internal array.
      * 
@@ -594,16 +606,22 @@ class NTPLite
      * 
      * @since 1.0
      */
-    private function _writeInArray($start, $values)
+    public function _writeInArray($start, $values)
     {
         $valuesSize = count($values);
         for ($i = 0; $i < $valuesSize; $i++)
             $this->_messageBytes[$start + $i] = $values[$i];
     }
-    
-    
+
+    public function _writehexInArray($start, $values)
+    {
+        $valuesSize = count($values);
+        for ($i = 0; $i < $valuesSize; $i++)
+            $this->_messageBytes[$start + $i] = $values[$i];
+    }
+
     /* PRIVATE METHODS, to manipulate SNTP timestamps */
-    
+
     /**
      * Reads a timestamp from the internal message.
      * 
@@ -616,25 +634,25 @@ class NTPLite
     private function _readTimestamp($position)
     {
         // Timestamps are 8-byte long
-        
+
         // The integer part, 4 first bytes
         $integerPart = 0;
         for ($i = 0; $i < 4; $i++)
             $integerPart = 256 * $integerPart + $this->_messageBytes[$position + $i];
-        
+
         // The fraction part, 4 last bytes
         $fractionPart = 0;
         for ($i = 4; $i < 8; $i++)
             $fractionPart = 256 * $fractionPart + $this->_messageBytes[$position + $i];
-        
+
         // Both values are in seconds, we convert them into milliseconds
-        $integerPart  *= 1000;
+        $integerPart *= 1000;
         $fractionPart *= 1000;
-        
+
         // Gather the two parts together to make the timestamp
-        return $integerPart + ( $fractionPart / 4294967296 ); // 0x100000000
+        return $integerPart + ($fractionPart / 4294967296); // 0x100000000
     }
-    
+
     /**
      * Writes a timestamp into the internal message.
      * 
@@ -648,24 +666,24 @@ class NTPLite
     {
         // The timestamp is converted to seconds
         $seconds = $timestamp / 1000;
-        
+
         // Separates the integer part and the fraction part
         $integerPart = floor($seconds);
         $fractionPart = $seconds - $integerPart;
         $fractionPart *= 4294967296; // 0x100000000
-        
+
         // Transforms both into bytes array
-        $integerBytes  = $this->_intToArray($integerPart,  4);
+        $integerBytes = $this->_intToArray($integerPart, 4);
         $fractionBytes = $this->_intToArray($fractionPart, 4);
-        
+
         // Writes bytes in the message
-        $this->_writeInArray($position,     $integerBytes );
-        $this->_writeInArray($position + 4, $fractionBytes );
+        $this->_writeInArray($position, $integerBytes);
+        $this->_writeInArray($position + 4, $fractionBytes);
     }
-    
-    
+
+
     /* PUBLIC STATIC METHODS, to do timestamp conversions */
-    
+
     /**
      * Converts a DateTime object into an SNTP timestamp.
      * 
@@ -678,9 +696,10 @@ class NTPLite
     public static function convertDateTimeToSntp($oTimestamp)
     {
         // Changes the timestamp base, and converts into milliseconds
+        $return = ($oTimestamp->format('Uv')) + (self::SNTP_TO_UNIX_TS_INTERVAL) * 1000;
         return ($oTimestamp->format('Uv')) + (self::SNTP_TO_UNIX_TS_INTERVAL) * 1000;
     }
-    
+
     /**
      * Converts an SNTP timestamp into a DateTime object.
      * 
@@ -695,10 +714,10 @@ class NTPLite
         // Converts into seconds, and changes the timestamp base
         return new DateTime('@' . (int) (($sTimestamp / 1000) - self::SNTP_TO_UNIX_TS_INTERVAL));
     }
-    
-    
+
+
     /* METHODS for display */
-    
+
     /**
      * Returns a string representation of the SNTP message.
      * 
@@ -711,21 +730,27 @@ class NTPLite
     public function __toString()
     {
         $string = '';
-        
+
         // Leap indicator
         $string .= "LI=$this->leapIndicator, ";
-        
+
         // Version number
         $string .= "VN=$this->versionNumber, ";
-        
+
         // Mode
         switch ($this->mode) {
-            case 3:  $mode = 'client'; break;
-            case 4:  $mode = 'server'; break;
-            default: $mode = 'other';  break;
+            case 3:
+                $mode = 'client';
+                break;
+            case 4:
+                $mode = 'server';
+                break;
+            default:
+                $mode = 'other';
+                break;
         }
         $string .= "Mode=$mode, ";
-        
+
         // Stratum
         if ($this->stratum == 0)
             $stratum = 'unspec./unav.';
@@ -736,26 +761,26 @@ class NTPLite
         else
             $stratum = 'reserved';
         $string .= "Stratum=$this->stratum ($stratum), ";
-        
+
         // Poll interval
         $string .= "PollInter=$this->pollInterval (" . pow(2, $this->pollInterval)
-                .  ' sec), ';
-        
+            . ' sec), ';
+
         $string .= "\n";
-        
+
         // Precision
         $string .= "Precision=$this->precision ("
-                .  number_format(pow(2, $this->precision), 6) . ' sec), ';
-        
+            . number_format(pow(2, $this->precision), 6) . ' sec), ';
+
         // Root delay
         $string .= 'RootDelay=' . sprintf('%.4f', $this->rootDelay) . ' sec, ';
-        
+
         // Root dispersion
         $string .= 'RootDispersion=' . sprintf('%.4f', $this->rootDispersion)
-                .  ' sec, ';
-        
+            . ' sec, ';
+
         $string .= "\n";
-        
+
         // Reference identifier
         $string .= "ReferenceIdentifier=$this->referenceIdentifier (";
         if ($this->referenceIdentifier == 'LOCL')
@@ -763,39 +788,39 @@ class NTPLite
         else
             $string .= long2ip($this->referenceIdentifier);
         $string .= '), ';
-        
+
         $string .= "\n";
-        
+
         // Reference timestamp
         $string .= 'ReferenceTS='
-                .  sprintf('%-26s', $this->timestampToString($this->referenceTimestamp))
-                .  '    ';
-        
+            . sprintf('%-26s', $this->timestampToString($this->referenceTimestamp))
+            . '    ';
+
         // Originate timestamp
         $string .= 'OriginateTS='
-                .  sprintf('%-26s', $this->timestampToString($this->originateTimestamp))
-                .  "\r\n";
-        
+            . sprintf('%-26s', $this->timestampToString($this->originateTimestamp))
+            . "\r\n";
+
         // Receive timestamp
         $string .= '  ReceiveTS='
-                .  sprintf('%-26s', $this->timestampToString($this->receiveTimestamp))
-                .  '    ';
-        
+            . sprintf('%-26s', $this->timestampToString($this->receiveTimestamp))
+            . '    ';
+
         // Transmit timestamp
         $string .= ' TransmitTS='
-                .  sprintf('%-26s', $this->timestampToString($this->transmitTimestamp))
-                .  "\r\n";
-        
+            . sprintf('%-26s', $this->timestampToString($this->transmitTimestamp))
+            . "\r\n";
+
         // Authentication: Key identifier & Message digest
         if ($this->_authenticated) {
             $string .= 'Key identifier=' . sprintf('%08x', $this->keyIdentifier)
-                    .  ', Message digest=' . sprintf('%032x', $this->messageDigest)
-                    .  "\r\n";
+                . ', Message digest=' . sprintf('%032x', $this->messageDigest)
+                . "\r\n";
         }
-        
+
         return $string;
     }
-    
+
     /**
      * Returns a string representation of an SNTP timestamp.
      * 
@@ -821,7 +846,7 @@ class NTPLite
             return $oTimestamp->format('Y-m-d H:i:s.u');
         }
     }
-    
+
     /**
      * Dumps the internal message on the standard output in hexadecimal.
      * 
@@ -831,12 +856,18 @@ class NTPLite
     {
         for ($i = 0; $i < $this->_messageSize; $i++) {
             if ($i % 8 === 0)
-                echo ' ';
+                echo '    ';
             if ($i % 16 === 0)
                 echo "\n";
-            printf('%02x', $this->_messageBytes[$i]);
+            printf('%02x ', $this->_messageBytes[$i]);
         }
         echo "\n";
+    }
+
+    public function crazy_merge($arr, $start = 24)
+    {
+        for ($i = $start, $j = 0; $j < 8; $i++, $j++)
+            $this->_messageBytes[$i] = $arr[$j];
     }
 }
 ?>
