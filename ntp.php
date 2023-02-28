@@ -7,13 +7,13 @@ use Workerman\Timer;
 use Workerman\Connection\UdpConnection;
 
 $GlobalData = new GlobalData\Server('127.0.0.1', 2207);
-$ntp_worker = new Worker('udp://127.0.0.1:123');
+$ntp_worker = new Worker('udp://0.0.0.0:123');
 $ntp_worker->name = 'NTP Service';
 $ntp_worker->onWorkerStart = function () {
     global $global;
     $global = new GlobalData\Client('127.0.0.1:2207');
-    $global->add('is_limited', false);
-    $global->add('query_now', 0);
+    $global->is_limited = false;
+    $global->query_now = 0;
     echo "Worker started!\n";
     $time_interval = 1;
     Timer::add(
@@ -33,8 +33,7 @@ $ntp_worker->onMessage = function (UdpConnection $connection, $data) {
     $recv_time = new DateTime(NULL);
     global $global;
     $global->query_now++;
-    if ($global->query_now > 2)
-    {
+    if ($global->query_now > 2) {
         $global->is_limited = true;
         $connection->close(0x0);
     }
@@ -47,7 +46,8 @@ $ntp_worker->onMessage = function (UdpConnection $connection, $data) {
             }
             echo "Bad request, aborted\n$hex\n";
         } else {
-            //$NTP->dump();
+            echo "recv:";
+            $NTP->dump();
             //echo "\n", $NTP;
             $NTP->leapIndicator = 0;
             $NTP->mode = 4;
@@ -58,11 +58,15 @@ $ntp_worker->onMessage = function (UdpConnection $connection, $data) {
             $NTP->referenceIdentifier = ip2long('202.38.64.7');
             $now = new DateTime(NULL);
             $NTP->referenceTimestamp = NTPLite::convertDateTimeToSntp($now);
-            $NTP->originateTimestamp = $NTP->transmitTimestamp;
+            //$NTP->originateTimestamp = $NTP->transmitTimestamp;
+            $NTP->originateTimestamp = '0';
             $NTP->receiveTimestamp = NTPLite::convertDateTimeToSntp($recv_time);
             $transmit_time = new DateTime(NULL);
             $NTP->transmitTimestamp = NTPLite::convertDateTimeToSntp($transmit_time);
             $message = $NTP->writeMessage();
+            echo "send:";
+            $NTP->dump();
+            echo "\n";
             $connection->close($message);
         }
     }
