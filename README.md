@@ -22,6 +22,7 @@ composer install
 php ntp.php start -d
 ```
 # Test
+## Start on server:
 ```
 root@crazy:~/crazy-ntp# php ntp.php start
 Workerman[ntp.php] start in DEBUG mode
@@ -43,6 +44,27 @@ send:
 1c 03 05 ec 00 00 00 00     00 00 00 00 ca 26 40 07     
 e7 a8 95 cc a2 4d d0 00     e7 a8 95 cc eb d8 a1 ed     
 e7 a8 95 cc a2 0c 48 00     e7 a8 95 cc a2 4d d0 00 
+
+```
+
+## chrony
+
+```
+[root@crazy ~]# chronyc sources -v
+
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* crazy.ntp.do>                 3   6    17    59  +1022us[+1191us] +/- 6549us
+^? hkhkg1-ntp-004.aaplimg.c>     1   6     3     2   -464us[ -464us] +/-   21ms
+^? 106.55.184.199                2   6     3     2   -532us[ -532us] +/-   50ms
 
 ```
 # License
