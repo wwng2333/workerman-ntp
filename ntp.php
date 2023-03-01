@@ -6,6 +6,8 @@ use Workerman\Worker;
 use Workerman\Timer;
 use Workerman\Connection\UdpConnection;
 
+define('_DEBUG', Worker::$daemonize);
+
 $GlobalData = new GlobalData\Server('127.0.0.1', 2207);
 $ntp_worker = new Worker('udp://0.0.0.0:123');
 $ntp_worker->name = 'NTP Service';
@@ -20,9 +22,11 @@ $ntp_worker->onWorkerStart = function () {
         $time_interval,
         function () {
             global $global;
-            #echo "query:$global->query_now, is_limit:";
-            #echo $global->is_limited ? 1 : 0;
-            #echo "\nTimer act, clear list.\n";
+            if (_DEBUG) {
+                echo "query:$global->query_now, is_limit:";
+                echo $global->is_limited ? 1 : 0;
+                echo "\nTimer act, clear list.\n";
+            }
             $global->query_now = 0;
             $global->is_limited = false;
         }
@@ -46,27 +50,28 @@ $ntp_worker->onMessage = function (UdpConnection $connection, $data) {
             }
             echo "Bad request, aborted\n$hex\n";
         } else {
-            echo "recv:";
-            $NTP->dump();
-            //echo "\n", $NTP;
+            if (_DEBUG) {
+                echo "recv:";
+                $NTP->dump();
+            }
             $NTP->leapIndicator = 0;
             $NTP->mode = 4;
             $NTP->stratum = 3;
             $NTP->precision = -20;
             $NTP->rootDelay = 0;
             $NTP->rootDispersion = 0.0120;
-            $NTP->referenceIdentifier = ip2long('202.38.64.7');
+            $NTP->referenceIdentifier = 'LOCL';
             $now = new DateTime(NULL);
             $NTP->referenceTimestamp = NTPLite::convertDateTimeToSntp($now);
-            //$NTP->originateTimestamp = $NTP->transmitTimestamp;
-            $NTP->originateTimestamp = '0';
             $NTP->receiveTimestamp = NTPLite::convertDateTimeToSntp($recv_time);
             $transmit_time = new DateTime(NULL);
             $NTP->transmitTimestamp = NTPLite::convertDateTimeToSntp($transmit_time);
             $message = $NTP->writeMessage();
-            echo "send:";
-            $NTP->dump();
-            echo "\n";
+            if (_DEBUG) {
+                echo "send:";
+                $NTP->dump();
+                echo "\n";
+            }
             $connection->close($message);
         }
     }
