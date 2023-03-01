@@ -863,11 +863,5 @@ class NTPLite
         }
         echo "\n";
     }
-
-    public function crazy_merge($arr, $start = 24)
-    {
-        for ($i = $start, $j = 0; $j < 8; $i++, $j++)
-            $this->_messageBytes[$i] = $arr[$j];
-    }
 }
 ?>
