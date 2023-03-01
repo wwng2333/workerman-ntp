@@ -6,7 +6,7 @@ use Workerman\Worker;
 use Workerman\Timer;
 use Workerman\Connection\UdpConnection;
 
-define('_DEBUG', Worker::$daemonize);
+define('_DEBUG', !Worker::$daemonize);
 
 $GlobalData = new GlobalData\Server('127.0.0.1', 2207);
 $ntp_worker = new Worker('udp://0.0.0.0:123');
