@@ -67,5 +67,15 @@ MS Name/IP address         Stratum Poll Reach LastRx Last sample
 ^? 106.55.184.199                2   6     3     2   -532us[ -532us] +/-   50ms
 
 ```
+
+## Busybox NTP Client
+```
+Mar  1 11:28:25 NTP Client: Synchronizing time to crazy.ntp.lan.
+Mar  1 11:28:26 NTP Client: System time changed, offset: 0.228898s
+```
+
+## Windows
+![image](https://user-images.githubusercontent.com/17147265/222060792-91677123-4049-4dcb-9b05-1536dbfdc5f5.png)
+
 # License
 LGPL 2.1 , according to NTPLite.
